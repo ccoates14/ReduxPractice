@@ -1,42 +1,65 @@
 import './App.css';
+import { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
+import { addTransaction, deleteTransaction, updateTransaction } from './slices/transactionSlice';
 import TransactionItem from './components/TransactionItem';
+import EditTransactionWindow from './components/AddEditTransactionWindow';
+
 
 function App() {
-
-  const fakeTransactionData = [
-    {
-      id: 1,
-      description: 'Grocery Shopping',
-      amount: -150.00,
-      date: '2024-06-01'
-    },
-    {
-      id: 2,
-      description: 'Electricity Bill',
-      amount: -75.50,
-      date: '2024-06-05'
-    },
-    {
-      id: 3,
-      description: 'Salary',
-      amount: 3000.00,
-      date: '2024-06-10'
-    }
-  ]
+  const [editingTransaction, setEditingTransaction] = useState(null);
+  const [showEditWindow, setShowEditWindow] = useState(false);
+  const dispatch = useDispatch();
+  const transactions = useSelector(state => state.transactions.items);
 
   return (
     <div className="App">
-      {fakeTransactionData.map(transaction => (
+
+      <button className="mb-4 px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 transition-colors" onClick={() => {
+        setEditingTransaction(null);
+        setShowEditWindow(true);
+      }}>
+        Add Transaction
+      </button>
+
+      {transactions.map(transaction => (
         <TransactionItem
           key={transaction.id}
           id={transaction.id}
           description={transaction.description}
           amount={transaction.amount}
+          date={transaction.date}
           type={transaction.amount > 0 ? 'income' : 'expense'}
-          onEdit={(id) => console.log(`Edit transaction with id: ${id}`)}
-          onDelete={(id) => console.log(`Delete transaction with id: ${id}`)}
+          onEdit={(id) => {
+              setEditingTransaction(id);
+              setShowEditWindow(true);
+          }}
+          onDelete={(id) => {
+              dispatch(deleteTransaction(id));
+          }}
         />
       ))}
+
+      {showEditWindow && (
+        <EditTransactionWindow
+          transaction={transactions.find(t => t.id === editingTransaction)}
+          onClose={() => setShowEditWindow(false)}
+          onSave={(updatedTransaction) => {
+
+            if (!editingTransaction) {
+              const newTransaction = {
+                ...updatedTransaction,
+                id: Date.now(),
+              };
+              dispatch(addTransaction(newTransaction));
+            } else {
+              dispatch(updateTransaction(updatedTransaction));
+            }
+
+            setShowEditWindow(false);
+          }}
+        />
+      )}
     </div>
   );
 }
